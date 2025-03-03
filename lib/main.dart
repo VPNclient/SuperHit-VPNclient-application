@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vpn_client/pages/main/main_page.dart';
-import 'package:vpn_client/theme_provider.dart';
-
+import 'theme_provider.dart';
+import 'pages/splashscreen_page.dart';
 import 'design/colors.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
   runApp(
     ChangeNotifierProvider(
@@ -24,11 +24,11 @@ class App extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'VPN Client',
+      title: 'SuperHIT',
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: themeProvider.themeMode,
-      home: const HomePage(),
+      home: const SplashScreen(),
     );
   }
 }

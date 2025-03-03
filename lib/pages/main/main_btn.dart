@@ -1,8 +1,6 @@
-import 'dart:async';
+import 'package:super_hit/design/custom_icons.dart';
+import 'package:super_hit/design/dimensions.dart';
 import 'package:flutter/material.dart';
-import 'package:vpn_client/design/colors.dart';
-import 'package:vpn_client/design/dimensions.dart';
-import 'package:vpnclient_controller_flutter/main.dart';
 
 class MainBtn extends StatefulWidget {
   const MainBtn({super.key});
@@ -11,157 +9,135 @@ class MainBtn extends StatefulWidget {
   State<MainBtn> createState() => MainBtnState();
 }
 
-class MainBtnState extends State<MainBtn> with SingleTickerProviderStateMixin {
+class MainBtnState extends State<MainBtn> {
+  bool buttonStatus = false;
   String connectionStatus = connectionStatusDisconnected;
-  String connectionTime = "00:00:00";
-  Timer? _timer;
-  late AnimationController _animationController;
-  late Animation<double> _sizeAnimation;
+  double blueCircleSize = 0.0;
+  bool isConnecting = false;
+  bool shouldAnimate = false;
 
-  @override
-  void initState() {
-    super.initState();
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    );
-    _sizeAnimation = Tween<double>(begin: 0, end: 150).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.ease),
-    );
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void startTimer() {
-    int seconds = 1;
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  void buttonHandler() async {
+    if (isConnecting == false) {
       setState(() {
-        int hours = seconds ~/ 3600;
-        int minutes = (seconds % 3600) ~/ 60;
-        int remainingSeconds = seconds % 60;
-        connectionTime =
-            '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+        if (buttonStatus == false) {
+          connectionStatus = connectionStatusConnecting;
+          shouldAnimate = false;
+          blueCircleSize =
+              MediaQuery.of(context).size.width <
+                      MediaQuery.of(context).size.height
+                  ? MediaQuery.of(context).size.width / 4.6
+                  : MediaQuery.of(context).size.height / 8;
+        } else {
+          connectionStatus = connectionStatusDisconnecting;
+          shouldAnimate = true;
+          blueCircleSize =
+              MediaQuery.of(context).size.width <
+                      MediaQuery.of(context).size.height
+                  ? MediaQuery.of(context).size.width / 4.6
+                  : MediaQuery.of(context).size.height / 8;
+        }
+        isConnecting = true;
       });
-      seconds++;
-    });
-  }
 
-  void stopTimer() {
-    _timer?.cancel();
-    setState(() {
-      connectionTime = "00:00:00";
-      connectionStatus = connectionStatusDisconnected;
-    });
-  }
+      await Future.delayed(Duration(milliseconds: 5));
 
-  Future<void> _handleConnection() async {
-    setState(() {
-      if (connectionStatus == connectionStatusConnected) {
-        connectionStatus = connectionStatusDisconnecting;
-      }
-      if (connectionStatus == connectionStatusDisconnected) {
-        connectionStatus = connectionStatusConnecting;
-      }
-    });
-
-    if (connectionStatus == connectionStatusConnecting) {
-      _animationController.repeat(reverse: true);
-      await Controller.connect();
-      startTimer();
       setState(() {
-        connectionStatus = connectionStatusConnected;
+        if (buttonStatus == false) {
+          shouldAnimate = true;
+          blueCircleSize =
+              MediaQuery.of(context).size.width <
+                      MediaQuery.of(context).size.height
+                  ? MediaQuery.of(context).size.width / 2.3
+                  : MediaQuery.of(context).size.height / 4;
+        } else {
+          shouldAnimate = false;
+          blueCircleSize =
+              MediaQuery.of(context).size.width <
+                      MediaQuery.of(context).size.height
+                  ? MediaQuery.of(context).size.width / 4.6
+                  : MediaQuery.of(context).size.height / 8;
+        }
       });
-      await _animationController.forward();
-      _animationController.stop();
-    } else if (connectionStatus == connectionStatusDisconnecting) {
-      _animationController.repeat(reverse: true);
-      stopTimer();
-      await Controller.disconnect();
+
+      await Future.delayed(Duration(seconds: 3));
+
       setState(() {
-        connectionStatus = connectionStatusDisconnected;
+        if (buttonStatus == false) {
+          buttonStatus = true;
+          connectionStatus = connectionStatusConnected;
+        } else {
+          buttonStatus = false;
+          connectionStatus = connectionStatusDisconnected;
+          blueCircleSize = 0.0;
+        }
+        isConnecting = false;
       });
-      await _animationController.reverse();
-      _animationController.stop();
     }
-
-
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          connectionTime,
-          style: TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.w600,
-            color:
-                connectionStatus == connectionStatusConnected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.secondary,
+        ElevatedButton(
+          onPressed: buttonHandler,
+          style: ElevatedButton.styleFrom(
+            shape: CircleBorder(),
+            elevation: elevation2,
+            backgroundColor: Theme.of(context).colorScheme.onPrimary,
+          ),
+          child: SizedBox(
+            width:
+                MediaQuery.of(context).size.width <
+                        MediaQuery.of(context).size.height
+                    ? MediaQuery.of(context).size.width / 2.3
+                    : MediaQuery.of(context).size.height / 4,
+            height:
+                MediaQuery.of(context).size.width <
+                        MediaQuery.of(context).size.height
+                    ? MediaQuery.of(context).size.width / 2.3
+                    : MediaQuery.of(context).size.height / 4,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: Duration(seconds: shouldAnimate ? 3 : 0),
+                  width: blueCircleSize,
+                  height: blueCircleSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                Icon(
+                  CustomIcons.mainBtn,
+                  size:
+                      MediaQuery.of(context).size.width <
+                              MediaQuery.of(context).size.height
+                          ? MediaQuery.of(context).size.width / 6.9
+                          : MediaQuery.of(context).size.height / 12,
+                  color:
+                      isConnecting | buttonStatus
+                          ? Theme.of(context).colorScheme.onPrimary
+                          : Colors.grey,
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 70),
-        GestureDetector(
-          onTap: _handleConnection,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  shape: BoxShape.circle,
-                ),
-              ),
-              AnimatedBuilder(
-                animation: _sizeAnimation,
-                builder: (context, child) {
-                  return Container(
-                    width: _sizeAnimation.value,
-                    height: _sizeAnimation.value,
-                    decoration: BoxDecoration(
-                      gradient: mainGradient,
-                      shape: BoxShape.circle,
-                    ),
-                  );
-                },
-              ),
-              Container(
-                alignment: Alignment.center,
-                width: 150,
-                height: 150,
-                child: const Icon(
-                  Icons.power_settings_new_rounded,
-                  color: Colors.white,
-                  size: 70,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          connectionStatus,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
+        Container(
+          margin: EdgeInsets.only(top: 12),
+          child: Text(
+            connectionStatus,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey,
+              fontSize: fontSize17,
+              fontFamily: fontFamilySFPro,
+              fontWeight: FontWeight.w400,
+            ),
           ),
         ),
       ],
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(home: Scaffold(body: Center(child: MainBtn()))));
 }
